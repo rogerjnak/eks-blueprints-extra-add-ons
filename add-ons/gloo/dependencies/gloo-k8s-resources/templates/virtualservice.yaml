@@ -1,0 +1,67 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: default-vs
+  namespace: gloo-system
+  labels:
+    gateway-type: public
+spec:
+  virtualHost:
+    options:
+      cors:
+        allowHeaders:
+          - origin
+          - content-type
+          - tenant-id
+          - authorization
+        allowMethods:
+          - GET
+          - POST
+          - UPDATE
+          - PATCH
+          - DELETE
+          - PUT
+          - OPTIONS
+        allowOrigin:
+          - "*"
+        maxAge: 1d
+    domains:
+      - "*"
+    routes:
+      - matchers:
+          - prefix: /api/
+        options:
+          timeout: "30s"
+          retries:
+            retryOn: "connect-failure"
+            numRetries: 3
+            perTryTimeout: "5s"
+          regexRewrite:
+            pattern:
+              regex: /api/([a-zA-Z]+)/(.*)
+            substitution: /\2 # rewrites the path
+          stagedTransformations:
+            regular:
+              requestTransforms:
+                - matcher:
+                    prefix: /api/
+                    headers:
+                      - name: tenant-id # whichever value
+                  requestTransformation:
+                    transformationTemplate:
+                      parseBodyBehavior: "DontParse"
+                      passthrough: {}
+                      extractors:
+                        x-service-name:
+                          header: ":path"
+                          regex: "/api/([a-zA-Z0-9]+)/.*"
+                          subgroup: 1
+                        x-tenant-id: # sanitize user input with a regex
+                          header: "tenant-id"
+                          regex: "[a-zA-Z0-9]+"
+                      headers:
+                        tenant-upstream:
+                          text: "staging-{{ x-service-name }}service_staging"
+                  clearRouteCache: true
+        routeAction:
+          clusterHeader: tenant-upstream

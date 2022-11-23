@@ -18,3 +18,6 @@ dependencies:
 - name: gloo
   version: 1.12.35
   repository: https://storage.googleapis.com/solo-public-helm
+- name: gloo-resources
+  version: 0.1.0
+  repository: "file://dependencies/gloo-k8s-resources" 

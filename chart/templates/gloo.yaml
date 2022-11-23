@@ -14,7 +14,8 @@ spec:
     targetRevision: {{ .Values.targetRevision }}
     helm:
       values: |
-        {{- toYaml .Values.gloo.gloo | nindent 8 }}
+        gloo:
+        {{- toYaml .Values.gloo.gloo | nindent 10 }}
   destination:
     server: https://kubernetes.default.svc
     namespace: gloo-system
